@@ -189,4 +189,4 @@ For support and questions:
 
 ---
 
-**Built with ❤️ using Flask and AI/ML technologies** 
+**Built with ❤️ using Flask and AI/ML technologies**

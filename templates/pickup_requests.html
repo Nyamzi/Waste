@@ -1,0 +1,247 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">
+        {% if current_user.role == 'company' %}
+            Company Pickup Requests
+        {% else %}
+            My Pickup Requests
+        {% endif %}
+    </h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        {% if current_user.role != 'company' %}
+            <a href="{{ url_for('request_pickup') }}" class="btn btn-primary me-2">
+                <i class="fas fa-plus me-2"></i>New Request
+            </a>
+        {% endif %}
+        <a href="{{ url_for('dashboard') }}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+        </a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-list me-2"></i>All Requests
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if requests %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Request ID</th>
+                                    {% if current_user.role == 'company' %}
+                                        <th>Customer</th>
+                                    {% endif %}
+                                    <th>Waste Type</th>
+                                    <th>Weight</th>
+                                    <th>Pickup Date</th>
+                                    <th>Time</th>
+                                    <th>Address</th>
+                                    <th>Price</th>
+                                    <th>Status</th>
+                                    <th>Payment</th>
+                                    <th>Payment Method</th>
+                                    <th>Created</th>
+                                    {% if current_user.role == 'company' %}
+                                        <th>Actions</th>
+                                    {% endif %}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for request in requests %}
+                                <tr>
+                                    <td>
+                                        <strong>#{{ request.id }}</strong>
+                                    </td>
+                                    {% if current_user.role == 'company' %}
+                                        <td>
+                                            <div>
+                                                <strong>{{ request.user.username }}</strong>
+                                                <br>
+                                                <small class="text-muted">{{ request.user.email }}</small>
+                                            </div>
+                                        </td>
+                                    {% endif %}
+                                    <td>
+                                        <span class="badge bg-primary">{{ request.waste_type.title() }}</span>
+                                    </td>
+                                    <td>{{ "%.1f"|format(request.estimated_weight) }} kg</td>
+                                    <td>{{ request.pickup_date.strftime('%m/%d/%Y') }}</td>
+                                    <td>{{ request.pickup_time }}</td>
+                                    <td>
+                                        <small class="text-muted">{{ request.address[:40] }}{% if request.address|length > 40 %}...{% endif %}</small>
+                                    </td>
+                                    <td>
+                                        <strong>${{ "%.2f"|format(request.price) }}</strong>
+                                    </td>
+                                    <td>
+                                        {% if request.status == 'pending' %}
+                                            <span class="badge bg-warning">Pending</span>
+                                        {% elif request.status == 'accepted' %}
+                                            <span class="badge bg-info">Accepted</span>
+                                        {% elif request.status == 'completed' %}
+                                            <span class="badge bg-success">Completed</span>
+                                        {% elif request.status == 'cancelled' %}
+                                            <span class="badge bg-danger">Cancelled</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if request.payment %}
+                                            {% if request.payment.payment_status == 'completed' %}
+                                                <span class="badge bg-success">Paid</span>
+                                            {% elif request.payment.payment_status == 'pending' %}
+                                                <span class="badge bg-warning">Pending</span>
+                                            {% else %}
+                                                <span class="badge bg-danger">Failed</span>
+                                            {% endif %}
+                                        {% else %}
+                                            <span class="badge bg-secondary">No Payment</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if request.payment %}
+                                            {{ request.payment.payment_method }}
+                                        {% else %}
+                                            <small class="text-muted">No payment method</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <small class="text-muted">{{ request.created_at.strftime('%m/%d/%Y') }}</small>
+                                    </td>
+                                    {% if current_user.role == 'company' %}
+                                        <td>
+                                            {% if request.status == 'pending' %}
+                                                <div class="btn-group btn-group-sm">
+                                                    <form method="POST" action="{{ url_for('update_request_status', request_id=request.id) }}" style="display: inline;">
+                                                        <input type="hidden" name="status" value="accepted">
+                                                        <button type="submit" class="btn btn-success btn-sm" title="Accept">
+                                                            <i class="fas fa-check"></i>
+                                                        </button>
+                                                    </form>
+                                                    <form method="POST" action="{{ url_for('update_request_status', request_id=request.id) }}" style="display: inline;">
+                                                        <input type="hidden" name="status" value="cancelled">
+                                                        <button type="submit" class="btn btn-danger btn-sm" title="Cancel">
+                                                            <i class="fas fa-times"></i>
+                                                        </button>
+                                                    </form>
+                                                </div>
+                                            {% elif request.status == 'accepted' %}
+                                                <form method="POST" action="{{ url_for('update_request_status', request_id=request.id) }}" style="display: inline;">
+                                                    <input type="hidden" name="status" value="completed">
+                                                    <button type="submit" class="btn btn-success btn-sm">
+                                                        <i class="fas fa-check-double"></i> Complete
+                                                    </button>
+                                                </form>
+                                            {% else %}
+                                                <small class="text-muted">No actions</small>
+                                            {% endif %}
+                                        </td>
+                                    {% endif %}
+                                </tr>
+                                {% if request.notes %}
+                                <tr>
+                                    <td colspan="{% if current_user.role == 'company' %}13{% else %}11{% endif %}">
+                                        <div class="bg-light p-2 rounded">
+                                            <small><strong>Notes:</strong> {{ request.notes }}</small>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endif %}
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-inbox fa-4x text-muted mb-4"></i>
+                        <h4 class="text-muted">
+                            {% if current_user.role == 'company' %}
+                                No Pickup Requests
+                            {% else %}
+                                No Pickup Requests Yet
+                            {% endif %}
+                        </h4>
+                        <p class="text-muted">
+                            {% if current_user.role == 'company' %}
+                                You haven't received any pickup requests yet.
+                            {% else %}
+                                You haven't submitted any pickup requests yet.
+                            </p>
+                            <a href="{{ url_for('request_pickup') }}" class="btn btn-primary">
+                                <i class="fas fa-plus me-2"></i>Request Your First Pickup
+                            </a>
+                            {% endif %}
+                        </p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Request Statistics -->
+{% if requests %}
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-chart-bar me-2"></i>Request Statistics
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3 text-center">
+                        <div class="border rounded p-3">
+                            <h4 class="text-primary">{{ requests|length }}</h4>
+                            <small class="text-muted">Total Requests</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3 text-center">
+                        <div class="border rounded p-3">
+                            <h4 class="text-warning">{{ requests|selectattr('status', 'equalto', 'pending')|list|length }}</h4>
+                            <small class="text-muted">Pending</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3 text-center">
+                        <div class="border rounded p-3">
+                            <h4 class="text-info">{{ requests|selectattr('status', 'equalto', 'accepted')|list|length }}</h4>
+                            <small class="text-muted">Accepted</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3 text-center">
+                        <div class="border rounded p-3">
+                            <h4 class="text-success">{{ requests|selectattr('status', 'equalto', 'completed')|list|length }}</h4>
+                            <small class="text-muted">Completed</small>
+                        </div>
+                    </div>
+                </div>
+                {% if current_user.role != 'company' %}
+                <div class="row mt-3">
+                    <div class="col-md-6 text-center">
+                        <div class="border rounded p-3">
+                            <h4 class="text-success">${{ "%.2f"|format(requests|sum(attribute='price')) }}</h4>
+                            <small class="text-muted">Total Value</small>
+                        </div>
+                    </div>
+                    <div class="col-md-6 text-center">
+                        <div class="border rounded p-3">
+                            <h4 class="text-info">{{ requests|selectattr('payment')|list|length }}</h4>
+                            <small class="text-muted">Paid Requests</small>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %} 

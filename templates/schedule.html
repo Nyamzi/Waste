@@ -1,0 +1,156 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">Collection Schedule</h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <a href="{{ url_for('dashboard') }}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+        </a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-calendar me-2"></i>Waste Collection Schedule
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if schedules %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Waste Type</th>
+                                    <th>Collection Day</th>
+                                    <th>Time</th>
+                                    <th>Location</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for schedule in schedules %}
+                                <tr>
+                                    <td>
+                                        <span class="badge bg-primary">{{ schedule.waste_type.title() }}</span>
+                                    </td>
+                                    <td>
+                                        <i class="fas fa-calendar-day me-2"></i>{{ schedule.collection_day }}
+                                    </td>
+                                    <td>
+                                        <i class="fas fa-clock me-2"></i>{{ schedule.collection_time }}
+                                    </td>
+                                    <td>
+                                        <i class="fas fa-map-marker-alt me-2"></i>{{ schedule.location }}
+                                    </td>
+                                    <td>
+                                        {% if schedule.active %}
+                                            <span class="badge bg-success">Active</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">Inactive</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-calendar-times fa-4x text-muted mb-4"></i>
+                        <h4 class="text-muted">No Collection Schedules</h4>
+                        <p class="text-muted">Collection schedules will be displayed here when available.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Weekly Schedule View -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-calendar-week me-2"></i>Weekly Schedule Overview
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    {% set days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'] %}
+                    {% for day in days %}
+                    <div class="col-md-3 col-sm-6 mb-3">
+                        <div class="card border">
+                            <div class="card-header text-center bg-light">
+                                <h6 class="mb-0">{{ day }}</h6>
+                            </div>
+                            <div class="card-body">
+                                {% set day_schedules = schedules|selectattr('collection_day', 'equalto', day)|list %}
+                                {% if day_schedules %}
+                                    {% for schedule in day_schedules %}
+                                    <div class="mb-2">
+                                        <small class="text-muted">{{ schedule.collection_time }}</small><br>
+                                        <span class="badge bg-primary">{{ schedule.waste_type.title() }}</span>
+                                    </div>
+                                    {% endfor %}
+                                {% else %}
+                                    <small class="text-muted">No collections</small>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Tips Section -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-lightbulb me-2"></i>Collection Tips
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="d-flex">
+                            <i class="fas fa-clock text-primary me-3 mt-1"></i>
+                            <div>
+                                <h6>Timing</h6>
+                                <p class="text-muted small">Place waste out the night before or early morning on collection day.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="d-flex">
+                            <i class="fas fa-box text-success me-3 mt-1"></i>
+                            <div>
+                                <h6>Preparation</h6>
+                                <p class="text-muted small">Ensure waste is properly sorted and contained in appropriate bins.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="d-flex">
+                            <i class="fas fa-exclamation-triangle text-warning me-3 mt-1"></i>
+                            <div>
+                                <h6>Weather</h6>
+                                <p class="text-muted small">Collections may be delayed during severe weather conditions.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

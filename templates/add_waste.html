@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">Add Waste Entry</h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <a href="{{ url_for('dashboard') }}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+        </a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8 mx-auto">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-plus me-2"></i>New Waste Entry
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="waste_type" class="form-label">Waste Type *</label>
+                            <select class="form-select" id="waste_type" name="waste_type" required>
+                                <option value="">Select waste type...</option>
+                                <option value="plastic">Plastic</option>
+                                <option value="paper">Paper</option>
+                                <option value="glass">Glass</option>
+                                <option value="metal">Metal</option>
+                                <option value="organic">Organic/Food Waste</option>
+                                <option value="electronics">Electronics</option>
+                                <option value="textiles">Textiles</option>
+                                <option value="hazardous">Hazardous Waste</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="weight" class="form-label">Weight (kg) *</label>
+                            <div class="input-group">
+                                <input type="number" class="form-control" id="weight" name="weight" step="0.1" min="0" required>
+                                <span class="input-group-text">kg</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="location" class="form-label">Location</label>
+                            <input type="text" class="form-control" id="location" name="location" placeholder="e.g., Home, Office, Park">
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="collection_date" class="form-label">Collection Date</label>
+                            <input type="datetime-local" class="form-control" id="collection_date" name="collection_date" value="{{ now.strftime('%Y-%m-%dT%H:%M') }}">
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="notes" class="form-label">Notes</label>
+                        <textarea class="form-control" id="notes" name="notes" rows="3" placeholder="Additional notes about this waste entry..."></textarea>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="recycled" name="recycled">
+                            <label class="form-check-label" for="recycled">
+                                <i class="fas fa-recycle me-2"></i>This waste was recycled
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="{{ url_for('dashboard') }}" class="btn btn-secondary me-md-2">Cancel</a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-2"></i>Save Entry
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Waste Type Information -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-info-circle me-2"></i>Waste Type Guide
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6><i class="fas fa-recycle text-success me-2"></i>Recyclable</h6>
+                        <ul class="list-unstyled">
+                            <li><strong>Plastic:</strong> Bottles, containers, packaging</li>
+                            <li><strong>Paper:</strong> Newspapers, cardboard, office paper</li>
+                            <li><strong>Glass:</strong> Bottles, jars, containers</li>
+                            <li><strong>Metal:</strong> Cans, aluminum foil, scrap metal</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h6><i class="fas fa-exclamation-triangle text-warning me-2"></i>Special Handling</h6>
+                        <ul class="list-unstyled">
+                            <li><strong>Organic:</strong> Food waste, yard waste</li>
+                            <li><strong>Electronics:</strong> E-waste, batteries</li>
+                            <li><strong>Hazardous:</strong> Chemicals, paint, oil</li>
+                            <li><strong>Textiles:</strong> Clothing, fabric scraps</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Set default date to current date/time
+document.addEventListener('DOMContentLoaded', function() {
+    const now = new Date();
+    now.setMinutes(now.getMinutes() - now.getMinutes() % 15); // Round to nearest 15 minutes
+    document.getElementById('collection_date').value = now.toISOString().slice(0, 16);
+});
+
+// Form validation
+document.querySelector('form').addEventListener('submit', function(e) {
+    const weight = parseFloat(document.getElementById('weight').value);
+    if (weight <= 0) {
+        e.preventDefault();
+        alert('Weight must be greater than 0');
+        return false;
+    }
+});
+</script>
+{% endblock %} 

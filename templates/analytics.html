@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">Analytics</h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <a href="{{ url_for('dashboard') }}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+        </a>
+    </div>
+</div>
+
+{% if charts %}
+    <!-- Charts Row -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-chart-line me-2"></i>Daily Waste Collection Trend (Last 30 Days)
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div id="daily-trend-chart" style="height: 400px;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-chart-pie me-2"></i>Waste Distribution by Type
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div id="waste-type-chart" style="height: 400px;"></div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-percentage me-2"></i>Recycling Rate Trend
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div id="recycling-rate-chart" style="height: 400px;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Insights -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-lightbulb me-2"></i>Insights & Recommendations
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="text-center p-3">
+                                <i class="fas fa-chart-line fa-2x text-primary mb-3"></i>
+                                <h6>Waste Patterns</h6>
+                                <p class="text-muted small">Analyze your daily waste generation patterns to identify trends and optimize collection schedules.</p>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="text-center p-3">
+                                <i class="fas fa-recycle fa-2x text-success mb-3"></i>
+                                <h6>Recycling Opportunities</h6>
+                                <p class="text-muted small">Track your recycling rate and identify areas where you can improve waste diversion.</p>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="text-center p-3">
+                                <i class="fas fa-leaf fa-2x text-info mb-3"></i>
+                                <h6>Environmental Impact</h6>
+                                <p class="text-muted small">Monitor your environmental footprint and set goals for waste reduction.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% else %}
+    <!-- No Data State -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body text-center py-5">
+                    <i class="fas fa-chart-bar fa-4x text-muted mb-4"></i>
+                    <h4 class="text-muted">No Analytics Data Available</h4>
+                    <p class="text-muted">Start adding waste entries to see your analytics and insights.</p>
+                    <a href="{{ url_for('add_waste') }}" class="btn btn-primary">
+                        <i class="fas fa-plus me-2"></i>Add First Entry
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+{% if charts %}
+    // Daily Trend Chart
+    {% if charts.daily_trend %}
+    const dailyTrendData = {{ charts.daily_trend | safe }};
+    Plotly.newPlot('daily-trend-chart', dailyTrendData.data, dailyTrendData.layout, {responsive: true});
+    {% endif %}
+
+    // Waste Type Chart
+    {% if charts.waste_by_type %}
+    const wasteTypeData = {{ charts.waste_by_type | safe }};
+    Plotly.newPlot('waste-type-chart', wasteTypeData.data, wasteTypeData.layout, {responsive: true});
+    {% endif %}
+
+    // Recycling Rate Chart
+    {% if charts.recycling_rate %}
+    const recyclingRateData = {{ charts.recycling_rate | safe }};
+    Plotly.newPlot('recycling-rate-chart', recyclingRateData.data, recyclingRateData.layout, {responsive: true});
+    {% endif %}
+{% endif %}
+
+// Responsive charts
+window.addEventListener('resize', function() {
+    if (typeof Plotly !== 'undefined') {
+        Plotly.Plots.resize('daily-trend-chart');
+        Plotly.Plots.resize('waste-type-chart');
+        Plotly.Plots.resize('recycling-rate-chart');
+    }
+});
+</script>
+{% endblock %} 

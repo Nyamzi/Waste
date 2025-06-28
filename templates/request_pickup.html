@@ -1,0 +1,214 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">Request Pickup</h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <a href="{{ url_for('dashboard') }}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+        </a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8 mx-auto">
+        <!-- Pricing Information -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-tags me-2"></i>Service Pricing
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Base Service Fees</h6>
+                        <ul class="list-unstyled">
+                            <li><strong>Plastic:</strong> $5.00</li>
+                            <li><strong>Paper:</strong> $3.00</li>
+                            <li><strong>Glass:</strong> $4.00</li>
+                            <li><strong>Metal:</strong> $6.00</li>
+                            <li><strong>Organic:</strong> $2.00</li>
+                            <li><strong>Electronics:</strong> $15.00</li>
+                            <li><strong>Textiles:</strong> $4.00</li>
+                            <li><strong>Hazardous:</strong> $25.00</li>
+                            <li><strong>Construction:</strong> $20.00</li>
+                            <li><strong>Furniture:</strong> $30.00</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Additional Charges</h6>
+                        <ul class="list-unstyled">
+                            <li><strong>Weight Charge:</strong> $0.50 per kg</li>
+                            <li><strong>Same Day Pickup:</strong> +$10.00</li>
+                            <li><strong>Weekend Pickup:</strong> +$5.00</li>
+                        </ul>
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <strong>Note:</strong> Final price will be calculated based on your waste type and estimated weight.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Request Form -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-edit me-2"></i>Pickup Request Form
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="waste_type" class="form-label">Waste Type *</label>
+                            <select class="form-select" id="waste_type" name="waste_type" required>
+                                <option value="">Select waste type...</option>
+                                <option value="plastic">Plastic</option>
+                                <option value="paper">Paper</option>
+                                <option value="glass">Glass</option>
+                                <option value="metal">Metal</option>
+                                <option value="organic">Organic</option>
+                                <option value="electronics">Electronics</option>
+                                <option value="textiles">Textiles</option>
+                                <option value="hazardous">Hazardous</option>
+                                <option value="construction">Construction</option>
+                                <option value="furniture">Furniture</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="estimated_weight" class="form-label">Estimated Weight (kg) *</label>
+                            <input type="number" class="form-control" id="estimated_weight" name="estimated_weight" 
+                                   step="0.1" min="0.1" max="1000" required>
+                            <div class="form-text">Enter the estimated weight in kilograms</div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="pickup_date" class="form-label">Pickup Date *</label>
+                            <input type="date" class="form-control" id="pickup_date" name="pickup_date" 
+                                   min="{{ now.strftime('%Y-%m-%d') }}" required>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="pickup_time" class="form-label">Preferred Time *</label>
+                            <select class="form-select" id="pickup_time" name="pickup_time" required>
+                                <option value="">Select time...</option>
+                                <option value="09:00">9:00 AM</option>
+                                <option value="10:00">10:00 AM</option>
+                                <option value="11:00">11:00 AM</option>
+                                <option value="12:00">12:00 PM</option>
+                                <option value="13:00">1:00 PM</option>
+                                <option value="14:00">2:00 PM</option>
+                                <option value="15:00">3:00 PM</option>
+                                <option value="16:00">4:00 PM</option>
+                                <option value="17:00">5:00 PM</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="address" class="form-label">Pickup Address *</label>
+                        <textarea class="form-control" id="address" name="address" rows="3" 
+                                  placeholder="Enter the complete pickup address..." required></textarea>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="notes" class="form-label">Additional Notes</label>
+                        <textarea class="form-control" id="notes" name="notes" rows="3" 
+                                  placeholder="Any special instructions or additional information..."></textarea>
+                    </div>
+                    
+                    <!-- Price Estimate -->
+                    <div class="alert alert-info" id="price_estimate" style="display: none;">
+                        <i class="fas fa-calculator me-2"></i>
+                        <strong>Estimated Cost:</strong> <span id="estimated_cost">$0.00</span>
+                    </div>
+                    
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="{{ url_for('dashboard') }}" class="btn btn-secondary me-md-2">Cancel</a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-paper-plane me-2"></i>Submit Request
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Service Information -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-info-circle me-2"></i>Service Information
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4 text-center">
+                        <i class="fas fa-clock fa-2x text-primary mb-2"></i>
+                        <h6>Quick Service</h6>
+                        <small class="text-muted">Same day or next day pickup available</small>
+                    </div>
+                    <div class="col-md-4 text-center">
+                        <i class="fas fa-shield-alt fa-2x text-success mb-2"></i>
+                        <h6>Safe & Secure</h6>
+                        <small class="text-muted">Licensed and insured waste collection</small>
+                    </div>
+                    <div class="col-md-4 text-center">
+                        <i class="fas fa-leaf fa-2x text-info mb-2"></i>
+                        <h6>Eco-Friendly</h6>
+                        <small class="text-muted">Proper disposal and recycling methods</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Price calculation
+const basePrices = {
+    'plastic': 5.0,
+    'paper': 3.0,
+    'glass': 4.0,
+    'metal': 6.0,
+    'organic': 2.0,
+    'electronics': 15.0,
+    'textiles': 4.0,
+    'hazardous': 25.0,
+    'construction': 20.0,
+    'furniture': 30.0,
+    'other': 5.0
+};
+
+function calculatePrice() {
+    const wasteType = document.getElementById('waste_type').value;
+    const weight = parseFloat(document.getElementById('estimated_weight').value) || 0;
+    
+    if (wasteType && weight > 0) {
+        const basePrice = basePrices[wasteType] || 5.0;
+        const weightCharge = weight * 0.5;
+        const totalPrice = basePrice + weightCharge;
+        
+        document.getElementById('estimated_cost').textContent = `$${totalPrice.toFixed(2)}`;
+        document.getElementById('price_estimate').style.display = 'block';
+    } else {
+        document.getElementById('price_estimate').style.display = 'none';
+    }
+}
+
+// Event listeners
+document.getElementById('waste_type').addEventListener('change', calculatePrice);
+document.getElementById('estimated_weight').addEventListener('input', calculatePrice);
+
+// Set minimum date to today
+document.getElementById('pickup_date').min = new Date().toISOString().split('T')[0];
+</script>
+{% endblock %} 

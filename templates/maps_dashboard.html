@@ -1,0 +1,428 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">
+        <i class="fas fa-map-marked-alt me-2"></i>Location Services
+    </h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <a href="{{ url_for('dashboard') if current_user.role != 'company' else url_for('company_dashboard') }}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+        </a>
+    </div>
+</div>
+
+<!-- Google Maps API Key Warning -->
+{% if api_key == 'your-google-maps-api-key' %}
+<div class="alert alert-warning">
+    <h5><i class="fas fa-exclamation-triangle me-2"></i>Google Maps API Key Required</h5>
+    <p class="mb-0">To use location services, please set your Google Maps API key in the environment variables as <code>GOOGLE_MAPS_API_KEY</code>.</p>
+</div>
+{% endif %}
+
+<div class="row">
+    <!-- Map Container -->
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-map me-2"></i>Interactive Map
+                </h5>
+            </div>
+            <div class="card-body p-0">
+                <div id="map" style="height: 500px; width: 100%;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Control Panel -->
+    <div class="col-lg-4">
+        <!-- Address Geocoding -->
+        <div class="card mb-3">
+            <div class="card-header">
+                <h6 class="card-title mb-0">
+                    <i class="fas fa-search-location me-2"></i>Address Lookup
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="input-group mb-3">
+                    <input type="text" class="form-control" id="address-input" placeholder="Enter address...">
+                    <button class="btn btn-primary" type="button" onclick="geocodeAddress()">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </div>
+                <div id="geocode-result" class="small text-muted"></div>
+            </div>
+        </div>
+
+        <!-- Distance Calculator -->
+        <div class="card mb-3">
+            <div class="card-header">
+                <h6 class="card-title mb-0">
+                    <i class="fas fa-route me-2"></i>Distance Calculator
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label class="form-label">From:</label>
+                    <input type="text" class="form-control" id="origin-input" placeholder="Origin address">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">To:</label>
+                    <input type="text" class="form-control" id="destination-input" placeholder="Destination address">
+                </div>
+                <button class="btn btn-outline-primary btn-sm" onclick="calculateDistance()">
+                    <i class="fas fa-calculator me-2"></i>Calculate
+                </button>
+                <div id="distance-result" class="mt-2 small"></div>
+            </div>
+        </div>
+
+        <!-- Company Features -->
+        {% if current_user.role == 'company' %}
+        <div class="card mb-3">
+            <div class="card-header">
+                <h6 class="card-title mb-0">
+                    <i class="fas fa-truck me-2"></i>Route Optimization
+                </h6>
+            </div>
+            <div class="card-body">
+                <button class="btn btn-success btn-sm" onclick="optimizeRoute()">
+                    <i class="fas fa-route me-2"></i>Optimize Pickup Route
+                </button>
+                <div id="route-result" class="mt-2 small"></div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Nearby Companies -->
+        <div class="card mb-3">
+            <div class="card-header">
+                <h6 class="card-title mb-0">
+                    <i class="fas fa-building me-2"></i>Nearby Companies
+                </h6>
+            </div>
+            <div class="card-body">
+                <button class="btn btn-outline-info btn-sm" onclick="findNearbyCompanies()">
+                    <i class="fas fa-search me-2"></i>Find Companies
+                </button>
+                <div id="companies-result" class="mt-2"></div>
+            </div>
+        </div>
+
+        <!-- Map Controls -->
+        <div class="card">
+            <div class="card-header">
+                <h6 class="card-title mb-0">
+                    <i class="fas fa-cogs me-2"></i>Map Controls
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <button class="btn btn-outline-secondary btn-sm" onclick="getCurrentLocation()">
+                        <i class="fas fa-crosshairs me-2"></i>My Location
+                    </button>
+                    <button class="btn btn-outline-secondary btn-sm" onclick="clearMap()">
+                        <i class="fas fa-trash me-2"></i>Clear Map
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Pickup Requests Map View -->
+{% if current_user.role == 'company' %}
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-map-pin me-2"></i>Pickup Requests Map
+                </h5>
+            </div>
+            <div class="card-body">
+                <div id="requests-map" style="height: 400px; width: 100%;"></div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script src="https://maps.googleapis.com/maps/api/js?key={{ api_key }}&libraries=places"></script>
+<script>
+let map, requestsMap;
+let markers = [];
+let directionsService, directionsRenderer;
+
+// Initialize maps
+function initMap() {
+    // Main map
+    map = new google.maps.Map(document.getElementById('map'), {
+        center: { lat: 0, lng: 0 },
+        zoom: 2,
+        mapTypeControl: true,
+        streetViewControl: true,
+        fullscreenControl: true
+    });
+
+    // Requests map for companies
+    {% if current_user.role == 'company' %}
+    requestsMap = new google.maps.Map(document.getElementById('requests-map'), {
+        center: { lat: 0, lng: 0 },
+        zoom: 10,
+        mapTypeControl: true
+    });
+    {% endif %}
+
+    // Initialize directions service
+    directionsService = new google.maps.DirectionsService();
+    directionsRenderer = new google.maps.DirectionsRenderer();
+    directionsRenderer.setMap(map);
+
+    // Try to get user's current location
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                const pos = {
+                    lat: position.coords.latitude,
+                    lng: position.coords.longitude,
+                };
+                map.setCenter(pos);
+                map.setZoom(12);
+                
+                // Add current location marker
+                new google.maps.Marker({
+                    position: pos,
+                    map: map,
+                    title: 'Your Location',
+                    icon: {
+                        url: 'https://maps.google.com/mapfiles/ms/icons/blue-dot.png'
+                    }
+                });
+            },
+            () => {
+                console.log('Error: The Geolocation service failed.');
+            }
+        );
+    }
+}
+
+// Geocode address
+function geocodeAddress() {
+    const address = document.getElementById('address-input').value;
+    if (!address) return;
+
+    fetch(`/api/geocode?address=${encodeURIComponent(address)}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                document.getElementById('geocode-result').innerHTML = `<span class="text-danger">${data.error}</span>`;
+                return;
+            }
+
+            const position = { lat: data.lat, lng: data.lng };
+            
+            // Clear existing markers
+            clearMarkers();
+            
+            // Add new marker
+            const marker = new google.maps.Marker({
+                position: position,
+                map: map,
+                title: data.formatted_address
+            });
+            markers.push(marker);
+
+            // Center map on the location
+            map.setCenter(position);
+            map.setZoom(15);
+
+            // Display result
+            document.getElementById('geocode-result').innerHTML = `
+                <strong>Found:</strong> ${data.formatted_address}<br>
+                <strong>Coordinates:</strong> ${data.lat.toFixed(6)}, ${data.lng.toFixed(6)}
+            `;
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            document.getElementById('geocode-result').innerHTML = '<span class="text-danger">Error geocoding address</span>';
+        });
+}
+
+// Calculate distance
+function calculateDistance() {
+    const origin = document.getElementById('origin-input').value;
+    const destination = document.getElementById('destination-input').value;
+    
+    if (!origin || !destination) return;
+
+    fetch(`/api/distance?origin=${encodeURIComponent(origin)}&destination=${encodeURIComponent(destination)}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                document.getElementById('distance-result').innerHTML = `<span class="text-danger">${data.error}</span>`;
+                return;
+            }
+
+            document.getElementById('distance-result').innerHTML = `
+                <strong>Distance:</strong> ${data.distance}<br>
+                <strong>Duration:</strong> ${data.duration}
+            `;
+
+            // Show route on map
+            directionsService.route({
+                origin: origin,
+                destination: destination,
+                travelMode: google.maps.TravelMode.DRIVING
+            }, (response, status) => {
+                if (status === 'OK') {
+                    directionsRenderer.setDirections(response);
+                }
+            });
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            document.getElementById('distance-result').innerHTML = '<span class="text-danger">Error calculating distance</span>';
+        });
+}
+
+// Find nearby companies
+function findNearbyCompanies() {
+    const center = map.getCenter();
+    if (!center) return;
+
+    fetch(`/api/nearby_companies?lat=${center.lat()}&lng=${center.lng()}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                document.getElementById('companies-result').innerHTML = `<span class="text-danger">${data.error}</span>`;
+                return;
+            }
+
+            let html = '<div class="list-group list-group-flush">';
+            data.companies.forEach(company => {
+                html += `
+                    <div class="list-group-item">
+                        <h6 class="mb-1">${company.name}</h6>
+                        <p class="mb-1 small">${company.address}</p>
+                        <small class="text-muted">Rating: ${company.rating}/5</small>
+                    </div>
+                `;
+
+                // Add marker to map
+                const marker = new google.maps.Marker({
+                    position: { lat: company.lat, lng: company.lng },
+                    map: map,
+                    title: company.name,
+                    icon: {
+                        url: 'https://maps.google.com/mapfiles/ms/icons/business.png'
+                    }
+                });
+                markers.push(marker);
+            });
+            html += '</div>';
+
+            document.getElementById('companies-result').innerHTML = html;
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            document.getElementById('companies-result').innerHTML = '<span class="text-danger">Error finding companies</span>';
+        });
+}
+
+// Optimize route (company only)
+{% if current_user.role == 'company' %}
+function optimizeRoute() {
+    fetch('/api/route_optimization')
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                document.getElementById('route-result').innerHTML = `<span class="text-danger">${data.error}</span>`;
+                return;
+            }
+
+            let html = `
+                <strong>Optimized Route:</strong><br>
+                <strong>Total Distance:</strong> ${data.total_distance}<br>
+                <strong>Total Duration:</strong> ${data.total_duration}<br><br>
+                <strong>Pickup Order:</strong><br>
+            `;
+
+            data.optimized_route.forEach((request, index) => {
+                html += `${index + 1}. ${request.customer} - ${request.waste_type} (${request.estimated_weight}kg)<br>`;
+            });
+
+            document.getElementById('route-result').innerHTML = html;
+
+            // Show route on requests map
+            if (data.optimized_route.length > 1) {
+                const waypoints = data.optimized_route.slice(1, -1).map(r => r.address);
+                const origin = data.optimized_route[0].address;
+                const destination = data.optimized_route[data.optimized_route.length - 1].address;
+
+                directionsService.route({
+                    origin: origin,
+                    destination: destination,
+                    waypoints: waypoints,
+                    optimizeWaypoints: true,
+                    travelMode: google.maps.TravelMode.DRIVING
+                }, (response, status) => {
+                    if (status === 'OK') {
+                        const directionsRenderer2 = new google.maps.DirectionsRenderer();
+                        directionsRenderer2.setMap(requestsMap);
+                        directionsRenderer2.setDirections(response);
+                    }
+                });
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            document.getElementById('route-result').innerHTML = '<span class="text-danger">Error optimizing route</span>';
+        });
+}
+{% endif %}
+
+// Get current location
+function getCurrentLocation() {
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                const pos = {
+                    lat: position.coords.latitude,
+                    lng: position.coords.longitude,
+                };
+                map.setCenter(pos);
+                map.setZoom(15);
+            },
+            () => {
+                alert('Error: The Geolocation service failed.');
+            }
+        );
+    } else {
+        alert('Error: Your browser doesn\'t support geolocation.');
+    }
+}
+
+// Clear map
+function clearMap() {
+    clearMarkers();
+    directionsRenderer.setDirections({ routes: [] });
+    document.getElementById('geocode-result').innerHTML = '';
+    document.getElementById('distance-result').innerHTML = '';
+    document.getElementById('companies-result').innerHTML = '';
+    document.getElementById('route-result').innerHTML = '';
+}
+
+// Clear markers
+function clearMarkers() {
+    markers.forEach(marker => marker.setMap(null));
+    markers = [];
+}
+
+// Initialize map when page loads
+window.onload = initMap;
+</script>
+{% endblock %} 

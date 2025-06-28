@@ -1,0 +1,308 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">
+        <i class="fas fa-brain me-2"></i>Advanced AI Business Intelligence
+    </h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <a href="{{ url_for('company_dashboard') }}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+        </a>
+    </div>
+</div>
+
+<!-- AI Business Overview -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="alert alert-primary">
+            <h5><i class="fas fa-chart-line me-2"></i>Exclusive Company AI-Powered Business Intelligence</h5>
+            <p class="mb-0">Access advanced AI analytics that analyze market trends, customer behavior, and operational data to provide strategic insights for business growth and optimization. This feature is exclusively available for waste management companies.</p>
+        </div>
+    </div>
+</div>
+
+<!-- AI Business Recommendations -->
+{% if insights.recommendations %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-robot me-2"></i>Strategic AI Recommendations
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    {% for recommendation in insights.recommendations %}
+                    <div class="col-md-6 mb-3">
+                        <div class="card border-{% if recommendation.priority == 'high' %}danger{% elif recommendation.priority == 'medium' %}warning{% else %}info{% endif %}">
+                            <div class="card-body">
+                                <h6 class="card-title">
+                                    <i class="fas fa-{% if recommendation.type == 'waste_reduction' %}recycle{% elif recommendation.type == 'revenue_optimization' %}dollar-sign{% else %}users{% endif %} me-2"></i>
+                                    {{ recommendation.title }}
+                                </h6>
+                                <p class="card-text">{{ recommendation.description }}</p>
+                                <span class="badge bg-{% if recommendation.priority == 'high' %}danger{% elif recommendation.priority == 'medium' %}warning{% else %}info{% endif %}">
+                                    {{ recommendation.priority.title() }} Priority
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- AI Business Charts -->
+<div class="row mb-4">
+    <!-- Revenue Forecast Chart -->
+    {% if charts.revenue_forecast %}
+    <div class="col-lg-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-chart-area me-2"></i>Revenue Forecast (30 Days)
+                </h5>
+            </div>
+            <div class="card-body">
+                <div id="revenue-forecast-chart"></div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Customer Segmentation Chart -->
+    {% if charts.customer_segments %}
+    <div class="col-lg-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-chart-pie me-2"></i>Customer Segmentation
+                </h5>
+            </div>
+            <div class="card-body">
+                <div id="customer-segments-chart"></div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Market Intelligence -->
+{% if insights.trend_analysis %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-chart-bar me-2"></i>Market Intelligence
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3 text-center">
+                        <div class="border rounded p-3">
+                            <h4 class="text-{% if insights.trend_analysis.trend_direction == 'increasing' %}success{% else %}warning{% endif %}">
+                                <i class="fas fa-{% if insights.trend_analysis.trend_direction == 'increasing' %}arrow-up{% else %}arrow-down{% endif %}"></i>
+                            </h4>
+                            <h6>{{ insights.trend_analysis.trend_direction.title() }} Market</h6>
+                            <small class="text-muted">Waste management demand</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3 text-center">
+                        <div class="border rounded p-3">
+                            <h4 class="text-primary">{{ "%.1f"|format(insights.trend_analysis.recycling_rate) }}%</h4>
+                            <h6>Market Recycling Rate</h6>
+                            <small class="text-muted">Industry benchmark</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3 text-center">
+                        <div class="border rounded p-3">
+                            <h4 class="text-info">{{ insights.trend_analysis.top_waste_types|length }}</h4>
+                            <h6>Primary Waste Types</h6>
+                            <small class="text-muted">Market opportunities</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3 text-center">
+                        <div class="border rounded p-3">
+                            <h4 class="text-warning">{{ insights.trend_analysis.seasonal_patterns|length }}</h4>
+                            <h6>Seasonal Trends</h6>
+                            <small class="text-muted">Planning insights</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Customer Intelligence -->
+{% if insights.customer_segments %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-users me-2"></i>Customer Intelligence
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    {% for segment in insights.customer_segments %}
+                    <div class="col-md-6 mb-3">
+                        <div class="card">
+                            <div class="card-header">
+                                <h6 class="card-title mb-0">
+                                    <i class="fas fa-user-tag me-2"></i>{{ segment.segment_name }}
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-6">
+                                        <small class="text-muted">Avg Waste</small>
+                                        <div class="fw-bold">{{ "%.1f"|format(segment.avg_waste_per_entry) }} kg</div>
+                                    </div>
+                                    <div class="col-6">
+                                        <small class="text-muted">Recycling Rate</small>
+                                        <div class="fw-bold">{{ "%.1f"|format(segment.recycling_rate) }}%</div>
+                                    </div>
+                                    <div class="col-6">
+                                        <small class="text-muted">Avg Spent</small>
+                                        <div class="fw-bold">${{ "%.2f"|format(segment.total_spent / (insights.customer_segments|length if insights.customer_segments|length > 0 else 1)) }}</div>
+                                    </div>
+                                    <div class="col-6">
+                                        <small class="text-muted">Frequency</small>
+                                        <div class="fw-bold">{{ "%.1f"|format(segment.request_frequency) }}/month</div>
+                                    </div>
+                                </div>
+                                <div class="mt-2">
+                                    <small class="text-muted">Business Opportunity:</small>
+                                    <div class="small">
+                                        {% if segment.segment_name == 'High-Value Customers' %}
+                                        <span class="text-success">Premium service opportunities</span>
+                                        {% elif segment.segment_name == 'Regular Recyclers' %}
+                                        <span class="text-info">Sustainability partnerships</span>
+                                        {% elif segment.segment_name == 'Low-Volume Users' %}
+                                        <span class="text-warning">Engagement campaigns needed</span>
+                                        {% else %}
+                                        <span class="text-muted">Standard service focus</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Operational Insights -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-cogs me-2"></i>Operational Insights
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="text-center">
+                            <i class="fas fa-route fa-3x text-primary mb-3"></i>
+                            <h6>Route Optimization</h6>
+                            <small class="text-muted">AI can optimize pickup routes based on demand patterns and reduce operational costs</small>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="text-center">
+                            <i class="fas fa-calendar-alt fa-3x text-success mb-3"></i>
+                            <h6>Demand Forecasting</h6>
+                            <small class="text-muted">Predict peak demand periods to optimize resource allocation and scheduling</small>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="text-center">
+                            <i class="fas fa-chart-line fa-3x text-warning mb-3"></i>
+                            <h6>Performance Analytics</h6>
+                            <small class="text-muted">Track KPIs and identify areas for operational improvement</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- AI Features for Business -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-info-circle me-2"></i>AI Business Features
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3 text-center">
+                        <i class="fas fa-chart-line fa-3x text-primary mb-3"></i>
+                        <h6>Predictive Analytics</h6>
+                        <small class="text-muted">Forecast revenue, demand, and market trends</small>
+                    </div>
+                    <div class="col-md-3 text-center">
+                        <i class="fas fa-users fa-3x text-success mb-3"></i>
+                        <h6>Customer Intelligence</h6>
+                        <small class="text-muted">Segment customers and identify opportunities</small>
+                    </div>
+                    <div class="col-md-3 text-center">
+                        <i class="fas fa-lightbulb fa-3x text-warning mb-3"></i>
+                        <h6>Strategic Insights</h6>
+                        <small class="text-muted">Data-driven recommendations for growth</small>
+                    </div>
+                    <div class="col-md-3 text-center">
+                        <i class="fas fa-cogs fa-3x text-info mb-3"></i>
+                        <h6>Operational Optimization</h6>
+                        <small class="text-muted">Improve efficiency and reduce costs</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+<script>
+// Render charts if they exist
+{% if charts.revenue_forecast %}
+Plotly.newPlot('revenue-forecast-chart', JSON.parse('{{ charts.revenue_forecast | safe }}').data, JSON.parse('{{ charts.revenue_forecast | safe }}').layout);
+{% endif %}
+
+{% if charts.customer_segments %}
+Plotly.newPlot('customer-segments-chart', JSON.parse('{{ charts.customer_segments | safe }}').data, JSON.parse('{{ charts.customer_segments | safe }}').layout);
+{% endif %}
+
+// Auto-refresh insights every 5 minutes
+setInterval(function() {
+    fetch('/api/ai_insights')
+        .then(response => response.json())
+        .then(data => {
+            console.log('AI business insights updated');
+        })
+        .catch(error => {
+            console.error('Error updating AI insights:', error);
+        });
+}, 300000); // 5 minutes
+</script>
+{% endblock %} 

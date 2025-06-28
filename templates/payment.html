@@ -1,0 +1,348 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">Payment</h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <a href="{{ url_for('dashboard') }}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+        </a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8 mx-auto">
+        <!-- Order Summary -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-receipt me-2"></i>Order Summary
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Pickup Details</h6>
+                        <p><strong>Request ID:</strong> #{{ pickup_request.id }}</p>
+                        <p><strong>Waste Type:</strong> {{ pickup_request.waste_type.title() }}</p>
+                        <p><strong>Estimated Weight:</strong> {{ "%.1f"|format(pickup_request.estimated_weight) }} kg</p>
+                        <p><strong>Pickup Date:</strong> {{ pickup_request.pickup_date.strftime('%B %d, %Y') }}</p>
+                        <p><strong>Pickup Time:</strong> {{ pickup_request.pickup_time }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Pricing</h6>
+                        <div class="bg-light p-3 rounded">
+                            <div class="d-flex justify-content-between mb-2">
+                                <span>Base Service Fee:</span>
+                                <span>${{ "%.2f"|format(pickup_request.price - (pickup_request.estimated_weight * 0.5)) }}</span>
+                            </div>
+                            <div class="d-flex justify-content-between mb-2">
+                                <span>Weight Charge ({{ "%.1f"|format(pickup_request.estimated_weight) }} kg × $0.50):</span>
+                                <span>${{ "%.2f"|format(pickup_request.estimated_weight * 0.5) }}</span>
+                            </div>
+                            <hr>
+                            <div class="d-flex justify-content-between fw-bold">
+                                <span>Total Amount:</span>
+                                <span class="text-primary">${{ "%.2f"|format(pickup_request.price) }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Payment Form -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-credit-card me-2"></i>Payment Information
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="payment_method" class="form-label">Payment Method *</label>
+                            <select class="form-select" id="payment_method" name="payment_method" required onchange="togglePaymentFields()">
+                                <option value="">Select payment method...</option>
+                                <option value="visa">Visa Card</option>
+                                <option value="mobile_money">Mobile Money</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <!-- Visa Card Fields -->
+                    <div id="visa_fields" style="display: none;">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="card_number" class="form-label">Visa Card Number *</label>
+                                <input type="text" class="form-control" id="card_number" name="card_number" 
+                                       placeholder="1234 5678 9012 3456" maxlength="19">
+                                <div class="form-text">Enter your 16-digit Visa card number</div>
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label for="card_holder" class="form-label">Cardholder Name *</label>
+                                <input type="text" class="form-control" id="card_holder" name="card_holder" 
+                                       placeholder="John Doe">
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label for="expiry_date" class="form-label">Expiry Date *</label>
+                                <input type="text" class="form-control" id="expiry_date" name="expiry_date" 
+                                       placeholder="MM/YY" maxlength="5">
+                            </div>
+                            
+                            <div class="col-md-4 mb-3">
+                                <label for="cvv" class="form-label">CVV *</label>
+                                <input type="text" class="form-control" id="cvv" name="cvv" 
+                                       placeholder="123" maxlength="4">
+                            </div>
+                            
+                            <div class="col-md-4 mb-3">
+                                <label for="billing_address" class="form-label">Billing Address *</label>
+                                <textarea class="form-control" id="billing_address" name="billing_address" 
+                                          rows="3" placeholder="Enter billing address..."></textarea>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Mobile Money Fields -->
+                    <div id="mobile_money_fields" style="display: none;">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="mobile_provider" class="form-label">Mobile Money Provider *</label>
+                                <select class="form-select" id="mobile_provider" name="mobile_provider">
+                                    <option value="">Select provider...</option>
+                                    <option value="mpesa">M-Pesa</option>
+                                    <option value="airtel_money">Airtel Money</option>
+                                    <option value="mtn_momo">MTN Mobile Money</option>
+                                    <option value="vodafone_cash">Vodafone Cash</option>
+                                    <option value="orange_money">Orange Money</option>
+                                    <option value="other">Other</option>
+                                </select>
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label for="phone_number" class="form-label">Phone Number *</label>
+                                <input type="tel" class="form-control" id="phone_number" name="phone_number" 
+                                       placeholder="+1234567890">
+                                <div class="form-text">Enter the phone number linked to your mobile money account</div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="account_name" class="form-label">Account Name *</label>
+                                <input type="text" class="form-control" id="account_name" name="account_name" 
+                                       placeholder="Account holder name">
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label for="transaction_pin" class="form-label">Transaction PIN *</label>
+                                <input type="password" class="form-control" id="transaction_pin" name="transaction_pin" 
+                                       placeholder="Enter your mobile money PIN" maxlength="4">
+                                <div class="form-text">You'll receive a prompt on your phone to confirm payment</div>
+                            </div>
+                        </div>
+                        
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <strong>Mobile Money Payment:</strong> You will receive a payment prompt on your phone. 
+                            Please enter your mobile money PIN when prompted to complete the transaction.
+                        </div>
+                    </div>
+                    
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>Security Note:</strong> This is a demo application. In a real environment, 
+                        payment information would be processed securely through a payment gateway.
+                    </div>
+                    
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="{{ url_for('dashboard') }}" class="btn btn-secondary me-md-2">Cancel</a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-lock me-2"></i>Pay ${{ "%.2f"|format(pickup_request.price) }}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Payment Security -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-shield-alt me-2"></i>Payment Security
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4 text-center">
+                        <i class="fas fa-lock fa-2x text-success mb-2"></i>
+                        <h6>Secure Payment</h6>
+                        <small class="text-muted">Your payment information is encrypted and secure</small>
+                    </div>
+                    <div class="col-md-4 text-center">
+                        <i class="fas fa-undo fa-2x text-info mb-2"></i>
+                        <h6>Money Back Guarantee</h6>
+                        <small class="text-muted">Full refund if pickup is not completed</small>
+                    </div>
+                    <div class="col-md-4 text-center">
+                        <i class="fas fa-headset fa-2x text-primary mb-2"></i>
+                        <h6>24/7 Support</h6>
+                        <small class="text-muted">Contact us anytime for assistance</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function togglePaymentFields() {
+    const paymentMethod = document.getElementById('payment_method').value;
+    const visaFields = document.getElementById('visa_fields');
+    const mobileMoneyFields = document.getElementById('mobile_money_fields');
+    
+    // Hide all fields first
+    visaFields.style.display = 'none';
+    mobileMoneyFields.style.display = 'none';
+    
+    // Show relevant fields based on selection
+    if (paymentMethod === 'visa') {
+        visaFields.style.display = 'block';
+        // Make visa fields required
+        document.getElementById('card_number').required = true;
+        document.getElementById('card_holder').required = true;
+        document.getElementById('expiry_date').required = true;
+        document.getElementById('cvv').required = true;
+        document.getElementById('billing_address').required = true;
+        // Make mobile money fields not required
+        document.getElementById('mobile_provider').required = false;
+        document.getElementById('phone_number').required = false;
+        document.getElementById('account_name').required = false;
+        document.getElementById('transaction_pin').required = false;
+    } else if (paymentMethod === 'mobile_money') {
+        mobileMoneyFields.style.display = 'block';
+        // Make mobile money fields required
+        document.getElementById('mobile_provider').required = true;
+        document.getElementById('phone_number').required = true;
+        document.getElementById('account_name').required = true;
+        document.getElementById('transaction_pin').required = true;
+        // Make visa fields not required
+        document.getElementById('card_number').required = false;
+        document.getElementById('card_holder').required = false;
+        document.getElementById('expiry_date').required = false;
+        document.getElementById('cvv').required = false;
+        document.getElementById('billing_address').required = false;
+    }
+}
+
+// Format card number with spaces
+document.getElementById('card_number').addEventListener('input', function(e) {
+    let value = e.target.value.replace(/\s+/g, '').replace(/[^0-9]/gi, '');
+    let formattedValue = value.replace(/\d{4}(?=.)/g, '$& ');
+    e.target.value = formattedValue;
+});
+
+// Format expiry date
+document.getElementById('expiry_date').addEventListener('input', function(e) {
+    let value = e.target.value.replace(/\D/g, '');
+    if (value.length >= 2) {
+        value = value.substring(0, 2) + '/' + value.substring(2, 4);
+    }
+    e.target.value = value;
+});
+
+// Format CVV
+document.getElementById('cvv').addEventListener('input', function(e) {
+    e.target.value = e.target.value.replace(/\D/g, '');
+});
+
+// Format phone number
+document.getElementById('phone_number').addEventListener('input', function(e) {
+    let value = e.target.value.replace(/\D/g, '');
+    if (value.length > 0 && !value.startsWith('+')) {
+        value = '+' + value;
+    }
+    e.target.value = value;
+});
+
+// Form validation
+document.querySelector('form').addEventListener('submit', function(e) {
+    const paymentMethod = document.getElementById('payment_method').value;
+    
+    if (paymentMethod === 'visa') {
+        const cardNumber = document.getElementById('card_number').value.replace(/\s/g, '');
+        const expiryDate = document.getElementById('expiry_date').value;
+        const cvv = document.getElementById('cvv').value;
+        const cardHolder = document.getElementById('card_holder').value;
+        const billingAddress = document.getElementById('billing_address').value;
+        
+        if (cardNumber.length !== 16) {
+            e.preventDefault();
+            alert('Please enter a valid 16-digit Visa card number');
+            return false;
+        }
+        
+        if (!cardHolder.trim()) {
+            e.preventDefault();
+            alert('Please enter the cardholder name');
+            return false;
+        }
+        
+        if (!expiryDate.match(/^\d{2}\/\d{2}$/)) {
+            e.preventDefault();
+            alert('Please enter a valid expiry date (MM/YY)');
+            return false;
+        }
+        
+        if (cvv.length < 3 || cvv.length > 4) {
+            e.preventDefault();
+            alert('Please enter a valid CVV');
+            return false;
+        }
+        
+        if (!billingAddress.trim()) {
+            e.preventDefault();
+            alert('Please enter a billing address');
+            return false;
+        }
+    } else if (paymentMethod === 'mobile_money') {
+        const mobileProvider = document.getElementById('mobile_provider').value;
+        const phoneNumber = document.getElementById('phone_number').value;
+        const accountName = document.getElementById('account_name').value;
+        const transactionPin = document.getElementById('transaction_pin').value;
+        
+        if (!mobileProvider) {
+            e.preventDefault();
+            alert('Please select a mobile money provider');
+            return false;
+        }
+        
+        if (!phoneNumber.trim()) {
+            e.preventDefault();
+            alert('Please enter a valid phone number');
+            return false;
+        }
+        
+        if (!accountName.trim()) {
+            e.preventDefault();
+            alert('Please enter the account name');
+            return false;
+        }
+        
+        if (transactionPin.length !== 4) {
+            e.preventDefault();
+            alert('Please enter a valid 4-digit transaction PIN');
+            return false;
+        }
+    }
+});
+</script>
+{% endblock %} 

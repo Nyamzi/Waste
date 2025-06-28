@@ -1,0 +1,250 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">
+        <i class="fas fa-chart-bar me-2"></i>My Waste Analytics
+    </h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <a href="{{ url_for('dashboard') }}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+        </a>
+    </div>
+</div>
+
+<!-- Basic Statistics Cards -->
+<div class="row mb-4">
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card stat-card h-100">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-white-50 text-uppercase mb-1">
+                            Total Waste
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-white">{{ "%.1f"|format(total_waste) }} kg</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-trash fa-2x text-white-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card stat-card h-100">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-white-50 text-uppercase mb-1">
+                            Recycled Waste
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-white">{{ "%.1f"|format(recycled_waste) }} kg</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-recycle fa-2x text-white-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card stat-card h-100">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-white-50 text-uppercase mb-1">
+                            Recycling Rate
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-white">{{ "%.1f"|format(recycling_rate) }}%</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-percentage fa-2x text-white-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card stat-card h-100">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-white-50 text-uppercase mb-1">
+                            Pickup Requests
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-white">{{ recent_requests|length }}</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-truck fa-2x text-white-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Waste by Type Chart -->
+    <div class="col-lg-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-chart-pie me-2"></i>Waste by Type
+                </h5>
+            </div>
+            <div class="card-body">
+                <canvas id="wasteTypeChart" width="400" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Activity -->
+    <div class="col-lg-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-history me-2"></i>Recent Activity
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="list-group list-group-flush">
+                    {% for entry in recent_entries[:5] %}
+                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                            <strong>{{ entry.waste_type }}</strong>
+                            <br>
+                            <small class="text-muted">{{ entry.collection_date.strftime('%m/%d/%Y') }} - {{ entry.location }}</small>
+                        </div>
+                        <div class="text-end">
+                            <span class="badge bg-primary rounded-pill">{{ "%.1f"|format(entry.weight) }} kg</span>
+                            {% if entry.recycled %}
+                            <span class="badge bg-success rounded-pill ms-1">Recycled</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Pickup Requests -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-list me-2"></i>Recent Pickup Requests
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if recent_requests %}
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Waste Type</th>
+                                <th>Weight</th>
+                                <th>Pickup Date</th>
+                                <th>Status</th>
+                                <th>Price</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for request in recent_requests %}
+                            <tr>
+                                <td>#{{ request.id }}</td>
+                                <td>
+                                    <span class="badge bg-primary">{{ request.waste_type.title() }}</span>
+                                </td>
+                                <td>{{ "%.1f"|format(request.estimated_weight) }} kg</td>
+                                <td>{{ request.pickup_date.strftime('%m/%d/%Y') }}</td>
+                                <td>
+                                    {% if request.status == 'pending' %}
+                                        <span class="badge bg-warning">Pending</span>
+                                    {% elif request.status == 'accepted' %}
+                                        <span class="badge bg-info">Accepted</span>
+                                    {% elif request.status == 'completed' %}
+                                        <span class="badge bg-success">Completed</span>
+                                    {% elif request.status == 'cancelled' %}
+                                        <span class="badge bg-danger">Cancelled</span>
+                                    {% endif %}
+                                </td>
+                                <td>${{ "%.2f"|format(request.price) }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-4">
+                    <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">No pickup requests yet</h5>
+                    <p class="text-muted">Start by requesting a waste pickup!</p>
+                    <a href="{{ url_for('request_pickup') }}" class="btn btn-primary">
+                        <i class="fas fa-plus me-2"></i>Request Pickup
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Environmental Impact -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="alert alert-success">
+            <h5><i class="fas fa-leaf me-2"></i>Environmental Impact</h5>
+            <p class="mb-0">
+                By recycling {{ "%.1f"|format(recycled_waste) }} kg of waste, you've helped reduce your environmental footprint! 
+                Keep up the great work in contributing to a sustainable future.
+            </p>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// Waste by Type Chart
+const ctx = document.getElementById('wasteTypeChart').getContext('2d');
+const wasteData = {
+    labels: [{% for waste_type, weight in waste_by_type.items() %}'{{ waste_type }}'{% if not loop.last %}, {% endif %}{% endfor %}],
+    datasets: [{
+        data: [{% for waste_type, weight in waste_by_type.items() %}{{ weight }}{% if not loop.last %}, {% endif %}{% endfor %}],
+        backgroundColor: [
+            '#FF6384',
+            '#36A2EB',
+            '#FFCE56',
+            '#4BC0C0',
+            '#9966FF',
+            '#FF9F40',
+            '#FF6384',
+            '#C9CBCF'
+        ],
+        borderWidth: 2,
+        borderColor: '#fff'
+    }]
+};
+
+new Chart(ctx, {
+    type: 'doughnut',
+    data: wasteData,
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                position: 'bottom'
+            }
+        }
+    }
+});
+</script>
+{% endblock %} 
